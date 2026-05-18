@@ -1,0 +1,12 @@
+build/
+vcpkg_installed/
+.vs/
+*.user
+*.suo
+*.sln
+*.vcxproj*
+Thumbs.db
+desktop.ini
+.DS_Store
+*.log
+*.zip
