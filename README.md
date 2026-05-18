@@ -86,6 +86,10 @@ DLL outputs to `SKSE/Plugins/SmithyInfo.dll`.
 - Item card space is limited — long material lists may get clipped
 - Enchanted items: smelting info is hidden (can't smelt them), tempering info requires the Arcane Blacksmith perk (configurable)
 
+## Source
+
+https://github.com/Gerkinfeltser/SmithyInfo
+
 ## License
 
 MIT
