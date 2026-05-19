@@ -1,0 +1,12 @@
+{
+  "rules": [
+    {
+      "icon": { "source": "iSIFExtra/iSIFExtraDemo.swf", "label": "toddIcon" },
+      "match": { "smithySmelt": true }
+    },
+    {
+      "icon": { "source": "iSIFExtra/iSIFExtraDemo.swf", "label": "sweetRollIcon" },
+      "match": { "smithyTemper": true }
+    }
+  ]
+}
