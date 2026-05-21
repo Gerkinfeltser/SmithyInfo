@@ -29,9 +29,7 @@ Install with your mod manager. No ESP, no Papyrus scripts, just a single DLL.
 
 ### DIII Integration (Optional)
 
-If you use DIII, copy `SKSE/Plugins/DIII/smithyinfo-diii-rules.json` to your `Data/SKSE/Plugins/DIII/` folder. You'll need to provide your own icon SWF files and update the `source` and `label` fields in the rules.
-
-Conditions are always registered with DIII. When `bDIIIIntegration = 1` and DIII is installed, icons are used. When disabled or DIII is absent, text indicators are used as a fallback.
+If you have [Dynamic Inventory Icon Injector](https://www.nexusmods.com/skyrimspecialedition/mods/174136) installed, SmithyInfo automatically registers conditions and provides icon rules + SWF — no manual setup required. DIII icons will appear on smeltable/temperable items when `bDIIIIntegration = 1` (default). If DIII is not installed, text indicators (`|TS|`, `|T|`, `|S|`) are shown as a fallback.
 
 ### In-Game Settings (Optional)
 
