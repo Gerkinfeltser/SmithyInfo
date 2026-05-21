@@ -22,6 +22,11 @@ public:
     static inline std::string indicatorTemperLocked = "t?";
     static inline bool hideLockedIndicators = false;
 
+    enum class ActiveMenu : uint8_t { None, Player, Container, Merchant };
+    static inline ActiveMenu activeMenu = ActiveMenu::None;
+
+    static bool IsIndicatorEnabled();
+
 private:
     using AdvanceMovie_t = void (*)(RE::IMenu* a_this, float a_interval, std::uint32_t a_currentTime);
     static inline REL::Relocation<AdvanceMovie_t> _InvAdvanceMovie;

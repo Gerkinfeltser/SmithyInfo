@@ -17,23 +17,27 @@ static void WriteString(const char* a_key, const std::string& a_value, const std
 void __stdcall RenderSettings() {
     using namespace ImGuiMCP;
 
-    if (CollapsingHeader("Effects Text (Item Card)", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (CollapsingHeader("Effects Text (Item Card Descriptions)", ImGuiTreeNodeFlags_DefaultOpen)) {
         Checkbox("Player Inventory", &ItemCardHook::effectsPlayer);
-        Checkbox("Container / NPC Inventory", &ItemCardHook::effectsContainer);
+        Checkbox("Container / NPC / Pickpocket", &ItemCardHook::effectsContainer);
         Checkbox("Merchant Barter", &ItemCardHook::effectsMerchant);
     }
 
     Separator();
 
-    if (CollapsingHeader("List Indicators", ImGuiTreeNodeFlags_DefaultOpen)) {
-        Checkbox("Player Inventory", &ItemCardHook::indicatorPlayer);
-        Checkbox("Container / NPC Inventory", &ItemCardHook::indicatorContainer);
-        Checkbox("Merchant Barter", &ItemCardHook::indicatorMerchant);
+    if (CollapsingHeader("List Indicators (DIII/Text Tags in Inv. List)", ImGuiTreeNodeFlags_DefaultOpen)) {
+        Checkbox("Player Inventory##ind", &ItemCardHook::indicatorPlayer);
+        Checkbox("Container / NPC / Pickpocket##ind", &ItemCardHook::indicatorContainer);
+        Checkbox("Merchant Barter##ind", &ItemCardHook::indicatorMerchant);
+
+        Separator();
+
+        Checkbox("Enable DIII icon integration", &DIIIIntegration::enabled);
     }
 
     Separator();
 
-    if (CollapsingHeader("Indicator Format")) {
+    if (CollapsingHeader("Indicator Format (Text Tag Style)")) {
         static char prefixBuf[32] = {};
         static char suffixBuf[32] = {};
         static char smeltBuf[16] = {};
@@ -78,12 +82,6 @@ void __stdcall RenderSettings() {
         try {
             ItemCardHook::arcaneBlacksmithPerkID = static_cast<RE::FormID>(std::stoul(perkBuf, nullptr, 16));
         } catch (...) {}
-    }
-
-    Separator();
-
-    if (CollapsingHeader("DIII Integration")) {
-        Checkbox("Enable DIII icons", &DIIIIntegration::enabled);
     }
 
     Separator();

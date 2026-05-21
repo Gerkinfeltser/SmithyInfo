@@ -58,13 +58,13 @@ bDIIIIntegration = 1
 
 ; Effects text on item card (right side) — per menu type (1 = show, 0 = hide)
 bEffectsPlayer = 1          ; Player inventory
-bEffectsContainer = 1       ; NPC inventory + chests/containers
+bEffectsContainer = 1       ; NPC inventory + chests/containers + pickpocket
 bEffectsMerchant = 1        ; Merchant barter (both sides of trade screen)
 
 ; Name indicators on inventory list (left side) — per menu type (1 = show, 0 = hide)
 ; Controls visibility for both text indicators and DIII icons
 bIndicatorPlayer = 1        ; Player inventory
-bIndicatorContainer = 1     ; NPC inventory + chests/containers
+bIndicatorContainer = 1     ; NPC inventory + chests/containers + pickpocket
 bIndicatorMerchant = 1      ; Merchant barter (both sides of trade screen)
 
 ; Indicator format (single characters only)
@@ -116,6 +116,7 @@ DLL outputs to `SKSE/Plugins/SmithyInfo.dll`.
 - Item card space is limited — long material lists may get clipped
 - Enchanted items: smelting info is hidden (can't smelt them), tempering info requires the Arcane Blacksmith perk (configurable)
 - DIII integration: SmithyInfo must load before DIII for condition registration to succeed
+- DIII icons update on DIII's refresh cycle — there may be a brief delay when toggling indicator settings in-game before icons appear or disappear
 - Tempered item detection relies on `ExtraTextDisplayData::temperFactor` — some mods may bypass this
 
 ## Source

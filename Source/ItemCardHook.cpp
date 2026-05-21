@@ -12,6 +12,15 @@ std::string FormatCountAndName(int a_count, const char* a_name) {
 
 }
 
+bool ItemCardHook::IsIndicatorEnabled() {
+    switch (activeMenu) {
+    case ActiveMenu::Player:    return indicatorPlayer;
+    case ActiveMenu::Container: return indicatorContainer;
+    case ActiveMenu::Merchant:  return indicatorMerchant;
+    default:                    return false;
+    }
+}
+
 bool ItemCardHook::HasArcaneBlacksmith() {
     auto* player = RE::PlayerCharacter::GetSingleton();
     if (!player) return false;
@@ -202,6 +211,7 @@ void ItemCardHook::InvAdvanceMovie_Hook(
     std::uint32_t a_currentTime)
 {
     _InvAdvanceMovie(a_this, a_interval, a_currentTime);
+    activeMenu = ActiveMenu::Player;
 
     auto* menu = static_cast<RE::InventoryMenu*>(a_this);
     auto& rt = menu->GetRuntimeData();
@@ -219,6 +229,7 @@ void ItemCardHook::ContAdvanceMovie_Hook(
     std::uint32_t a_currentTime)
 {
     _ContAdvanceMovie(a_this, a_interval, a_currentTime);
+    activeMenu = ActiveMenu::Container;
 
     auto* menu = static_cast<RE::ContainerMenu*>(a_this);
     auto& rt = menu->GetRuntimeData();
@@ -236,6 +247,7 @@ void ItemCardHook::BarterAdvanceMovie_Hook(
     std::uint32_t a_currentTime)
 {
     _BarterAdvanceMovie(a_this, a_interval, a_currentTime);
+    activeMenu = ActiveMenu::Merchant;
 
     auto* menu = static_cast<RE::BarterMenu*>(a_this);
     auto& rt = menu->GetRuntimeData();

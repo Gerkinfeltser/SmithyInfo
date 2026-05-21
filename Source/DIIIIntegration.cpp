@@ -12,6 +12,7 @@ class SmithySmeltCondition : public DIII::ICondition {
 public:
     bool Match(RE::InventoryEntryData* entry) const override {
         if (!DIIIIntegration::enabled) return false;
+        if (!ItemCardHook::IsIndicatorEnabled()) return false;
         if (!entry || !entry->object) return false;
         return COBJCache::GetSingleton().IsSmeltAvailable(entry->object->GetFormID());
     }
@@ -21,6 +22,7 @@ class SmithySmeltLockedCondition : public DIII::ICondition {
 public:
     bool Match(RE::InventoryEntryData* entry) const override {
         if (!DIIIIntegration::enabled) return false;
+        if (!ItemCardHook::IsIndicatorEnabled()) return false;
         if (ItemCardHook::hideLockedIndicators) return false;
         if (!entry || !entry->object) return false;
         auto& cache = COBJCache::GetSingleton();
@@ -35,6 +37,7 @@ class SmithyTemperCondition : public DIII::ICondition {
 public:
     bool Match(RE::InventoryEntryData* entry) const override {
         if (!DIIIIntegration::enabled) return false;
+        if (!ItemCardHook::IsIndicatorEnabled()) return false;
         if (!entry || !entry->object) return false;
         auto& cache = COBJCache::GetSingleton();
         bool isEnchanted = entry->IsEnchanted();
@@ -54,6 +57,7 @@ class SmithyTemperLockedCondition : public DIII::ICondition {
 public:
     bool Match(RE::InventoryEntryData* entry) const override {
         if (!DIIIIntegration::enabled) return false;
+        if (!ItemCardHook::IsIndicatorEnabled()) return false;
         if (ItemCardHook::hideLockedIndicators) return false;
         if (!entry || !entry->object) return false;
 
