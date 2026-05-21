@@ -1,5 +1,7 @@
 #include "COBJCache.h"
+#include "DIIIIntegration.h"
 #include "ItemCardHook.h"
+#include "SmithyInfoMenu.h"
 
 #include <spdlog/sinks/basic_file_sink.h>
 #include <windows.h>
@@ -24,16 +26,19 @@ static std::string GetINIPath() {
     return (p.parent_path() / "SmithyInfo.ini").string();
 }
 
+static std::string iniPath;
+
 static void OnDataLoaded(SKSE::MessagingInterface::Message* a_msg) {
     if (a_msg->type == SKSE::MessagingInterface::kDataLoaded) {
         COBJCache::GetSingleton().Build();
+        SmithyInfoMenu::Register(iniPath);
     }
 }
 
 SKSEPluginLoad(const SKSE::LoadInterface* a_skse) {
     SKSE::Init(a_skse);
 
-    auto iniPath = GetINIPath();
+    iniPath = GetINIPath();
     char levelBuf[32] = {};
     GetPrivateProfileStringA("SmithyInfo", "sLogLevel", "info", levelBuf, 32, iniPath.c_str());
     auto logLevel = ParseLogLevel(levelBuf);
@@ -92,8 +97,28 @@ SKSEPluginLoad(const SKSE::LoadInterface* a_skse) {
     char temperBuf[16] = {};
     GetPrivateProfileStringA("SmithyInfo", "sIndicatorTemper", "t", temperBuf, 16, iniPath.c_str());
     ItemCardHook::indicatorTemper = temperBuf;
-    logger::info("INI: indicator format = '{}{}{}{}'", ItemCardHook::indicatorPrefix, ItemCardHook::indicatorTemper, ItemCardHook::indicatorSmelt, ItemCardHook::indicatorSuffix);
 
+    char smeltLockedBuf[16] = {};
+    GetPrivateProfileStringA("SmithyInfo", "sIndicatorSmeltLocked", "s?", smeltLockedBuf, 16, iniPath.c_str());
+    ItemCardHook::indicatorSmeltLocked = smeltLockedBuf;
+
+    char temperLockedBuf[16] = {};
+    GetPrivateProfileStringA("SmithyInfo", "sIndicatorTemperLocked", "t?", temperLockedBuf, 16, iniPath.c_str());
+    ItemCardHook::indicatorTemperLocked = temperLockedBuf;
+    logger::info("INI: indicator format = '{}{}{}{}' (locked: '{}{}')",
+        ItemCardHook::indicatorPrefix, ItemCardHook::indicatorTemper, ItemCardHook::indicatorSmelt, ItemCardHook::indicatorSuffix,
+        ItemCardHook::indicatorTemperLocked, ItemCardHook::indicatorSmeltLocked);
+
+    DIIIIntegration::enabled = GetPrivateProfileIntA("SmithyInfo", "bDIIIIntegration", 1, iniPath.c_str()) != 0;
+    logger::info("INI: bDIIIIntegration = {}", DIIIIntegration::enabled);
+
+    ItemCardHook::hideLockedIndicators = GetPrivateProfileIntA("SmithyInfo", "bHideLockedIndicators", 0, iniPath.c_str()) != 0;
+    logger::info("INI: bHideLockedIndicators = {}", ItemCardHook::hideLockedIndicators);
+
+    SmithyInfoMenu::smfEnabled = GetPrivateProfileIntA("SmithyInfo", "bSMFIntegration", 1, iniPath.c_str()) != 0;
+    logger::info("INI: bSMFIntegration = {}", SmithyInfoMenu::smfEnabled);
+
+    DIIIIntegration::Install();
     ItemCardHook::Install();
 
     SKSE::GetMessagingInterface()->RegisterListener(OnDataLoaded);

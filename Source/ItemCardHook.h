@@ -3,6 +3,9 @@
 class ItemCardHook {
 public:
     static void Install();
+    static bool IsItemTempered(RE::InventoryEntryData* entry);
+    static bool HasArcaneBlacksmith();
+    static RE::FormID GetTemplateFormID(RE::FormID a_formID, bool a_isEnchanted);
     static inline bool gateEnchantedTempering = true;
     static inline bool effectsPlayer = true;
     static inline bool effectsContainer = true;
@@ -15,6 +18,9 @@ public:
     static inline std::string indicatorSuffix = "|";
     static inline std::string indicatorSmelt = "s";
     static inline std::string indicatorTemper = "t";
+    static inline std::string indicatorSmeltLocked = "s?";
+    static inline std::string indicatorTemperLocked = "t?";
+    static inline bool hideLockedIndicators = false;
 
 private:
     using AdvanceMovie_t = void (*)(RE::IMenu* a_this, float a_interval, std::uint32_t a_currentTime);

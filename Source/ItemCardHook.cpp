@@ -1,5 +1,6 @@
 #include "ItemCardHook.h"
 #include "COBJCache.h"
+#include "DIIIIntegration.h"
 
 namespace {
 
@@ -9,63 +10,110 @@ std::string FormatCountAndName(int a_count, const char* a_name) {
     return std::to_string(a_count) + " "s + a_name;
 }
 
-static bool PlayerHasArcaneBlacksmith() {
+}
+
+bool ItemCardHook::HasArcaneBlacksmith() {
     auto* player = RE::PlayerCharacter::GetSingleton();
     if (!player) return false;
-    auto* perk = RE::TESForm::LookupByID<RE::BGSPerk>(ItemCardHook::arcaneBlacksmithPerkID);
+    auto* perk = RE::TESForm::LookupByID<RE::BGSPerk>(arcaneBlacksmithPerkID);
     if (!perk) return false;
     return player->HasPerk(perk);
 }
 
-// Returns the FormID to use for cache lookup.
-// For enchanted items, falls back to templateWeapon/templateArmor if no direct match.
-RE::FormID GetEffectiveFormID(RE::FormID a_formID, bool a_isEnchanted) {
-    if (!a_isEnchanted) return a_formID;
-
+RE::FormID ItemCardHook::GetTemplateFormID(RE::FormID a_formID, bool a_isEnchanted) {
+    if (!a_isEnchanted) return 0;
     auto* form = RE::TESForm::LookupByID(a_formID);
     if (auto* weapon = form ? form->As<RE::TESObjectWEAP>() : nullptr) {
         if (weapon->templateWeapon) return weapon->templateWeapon->formID;
     } else if (auto* armor = form ? form->As<RE::TESObjectARMO>() : nullptr) {
         if (armor->templateArmor) return armor->templateArmor->formID;
     }
-    return a_formID;
+    return 0;
 }
+
+bool ItemCardHook::IsItemTempered(RE::InventoryEntryData* entry) {
+    if (!entry || !entry->extraLists) return false;
+    for (const auto& xList : *entry->extraLists) {
+        if (!xList) continue;
+        auto* textData = xList->GetByType<RE::ExtraTextDisplayData>();
+        if (textData && textData->temperFactor > 0.0f) return true;
+    }
+    return false;
+}
+
+namespace {
 
 bool ShouldShowTemper(bool a_isEnchanted) {
     if (!a_isEnchanted) return true;
-    if (ItemCardHook::gateEnchantedTempering && !PlayerHasArcaneBlacksmith()) return false;
+    if (ItemCardHook::gateEnchantedTempering && !ItemCardHook::HasArcaneBlacksmith()) return false;
     return true;
 }
 
-std::string GetNameIndicator(RE::FormID a_formID, bool a_isEnchanted) {
+std::string GetNameIndicator(RE::FormID a_formID, bool a_isEnchanted, bool a_isTempered) {
     auto& cache = COBJCache::GetSingleton();
-    bool hasSmelt = false;
-    bool hasTemper = false;
-
-    if (!a_isEnchanted) {
-        auto* smeltResult = cache.GetSmeltResult(a_formID);
-        hasSmelt = (smeltResult && smeltResult->outputItem);
-    }
-
-    if (ShouldShowTemper(a_isEnchanted)) {
-        auto lookupID = GetEffectiveFormID(a_formID, a_isEnchanted);
-        const auto* temperMats = cache.GetTemperMaterials(lookupID);
-        hasTemper = (temperMats && !temperMats->empty());
-    }
-
     auto& prefix = ItemCardHook::indicatorPrefix;
     auto& suffix = ItemCardHook::indicatorSuffix;
     auto& s = ItemCardHook::indicatorSmelt;
     auto& t = ItemCardHook::indicatorTemper;
+    auto& sLocked = ItemCardHook::indicatorSmeltLocked;
+    auto& tLocked = ItemCardHook::indicatorTemperLocked;
 
-    if (hasSmelt && hasTemper) return " "s + prefix + t + s + suffix;
-    if (hasTemper) return " "s + prefix + t + suffix;
-    if (hasSmelt) return " "s + prefix + s + suffix;
-    return "";
+    bool hasSmelt = false;
+    bool smeltAvailable = false;
+    bool hasTemper = false;
+    bool temperAvailable = false;
+
+    if (!a_isEnchanted) {
+        auto* smeltResult = cache.GetSmeltResult(a_formID);
+        hasSmelt = (smeltResult && smeltResult->outputItem);
+        if (hasSmelt) {
+            smeltAvailable = cache.IsSmeltAvailable(a_formID);
+        }
+    }
+
+    if (ShouldShowTemper(a_isEnchanted)) {
+        auto templateID = ItemCardHook::GetTemplateFormID(a_formID, a_isEnchanted);
+        auto lookupID = (templateID != 0) ? templateID : a_formID;
+        auto* temperEntry = cache.GetTemperEntry(lookupID);
+        hasTemper = (temperEntry && !temperEntry->ingredients.empty());
+        if (hasTemper) {
+            temperAvailable = cache.IsTemperAvailable(a_formID, a_isEnchanted, templateID);
+            if (a_isTempered) temperAvailable = false;
+        }
+    }
+
+    std::string parts;
+
+    if (hasTemper && hasSmelt) {
+        bool showTemper = temperAvailable || !ItemCardHook::hideLockedIndicators;
+        bool showSmelt = smeltAvailable || !ItemCardHook::hideLockedIndicators;
+        if (showTemper || showSmelt) {
+            parts = " "s + prefix;
+            if (showTemper) parts += (temperAvailable ? t : tLocked);
+            if (showSmelt) parts += (smeltAvailable ? s : sLocked);
+            parts += suffix;
+        }
+    } else if (hasTemper) {
+        if (temperAvailable) {
+            parts = " "s + prefix + t + suffix;
+        } else if (!ItemCardHook::hideLockedIndicators) {
+            parts = " "s + prefix + tLocked + suffix;
+        }
+    } else if (hasSmelt) {
+        if (smeltAvailable) {
+            parts = " "s + prefix + s + suffix;
+        } else if (!ItemCardHook::hideLockedIndicators) {
+            parts = " "s + prefix + sLocked + suffix;
+        }
+    }
+
+    return parts;
 }
 
 void UpdateListNames(RE::ItemList* a_itemList, RE::GFxMovieView* a_movie) {
     if (!a_itemList || !a_movie) return;
+
+    if (DIIIIntegration::enabled && DIIIIntegration::conditionsRegistered) return;
 
     for (auto* entry : a_itemList->items) {
         if (!entry || !entry->data.objDesc || !entry->data.objDesc->object) continue;
@@ -73,8 +121,9 @@ void UpdateListNames(RE::ItemList* a_itemList, RE::GFxMovieView* a_movie) {
         auto* objDesc = entry->data.objDesc;
         bool isEnchanted = objDesc->IsEnchanted();
         auto formID = entry->data.objDesc->object->formID;
+        bool isTempered = ItemCardHook::IsItemTempered(entry->data.objDesc);
 
-        auto indicator = GetNameIndicator(formID, isEnchanted);
+        auto indicator = GetNameIndicator(formID, isEnchanted, isTempered);
         if (indicator.empty()) continue;
 
         RE::GFxValue textVal;
@@ -89,7 +138,7 @@ void UpdateListNames(RE::ItemList* a_itemList, RE::GFxMovieView* a_movie) {
     }
 }
 
-std::string BuildSmithyText(RE::FormID a_formID, bool a_isEnchanted) {
+std::string BuildSmithyText(RE::FormID a_formID, bool a_isEnchanted, bool a_isTempered) {
     auto& cache = COBJCache::GetSingleton();
     std::string text;
 
@@ -103,14 +152,15 @@ std::string BuildSmithyText(RE::FormID a_formID, bool a_isEnchanted) {
         }
     }
 
-    if (ShouldShowTemper(a_isEnchanted)) {
-        auto lookupID = GetEffectiveFormID(a_formID, a_isEnchanted);
-        const auto* temperMats = cache.GetTemperMaterials(lookupID);
-        if (temperMats && !temperMats->empty()) {
+    if (ShouldShowTemper(a_isEnchanted) && !a_isTempered) {
+        auto templateID = ItemCardHook::GetTemplateFormID(a_formID, a_isEnchanted);
+        auto lookupID = (templateID != 0) ? templateID : a_formID;
+        const auto* temperEntry = cache.GetTemperEntry(lookupID);
+        if (temperEntry && !temperEntry->ingredients.empty()) {
             if (!text.empty()) text += "<br>";
             text += "Tempers with: ";
             bool first = true;
-            for (auto& ing : *temperMats) {
+            for (auto& ing : temperEntry->ingredients) {
                 if (!ing.item) continue;
                 auto* name = ing.item->GetName();
                 if (!name || !*name) continue;
@@ -213,6 +263,7 @@ void ItemCardHook::InjectItemCardText(
 
     auto* objDesc = selectedItem->data.objDesc;
     bool isEnchanted = objDesc->IsEnchanted();
+    bool isTempered = ItemCardHook::IsItemTempered(selectedItem->data.objDesc);
 
     if (isNewSelection) {
         logger::debug("SmithyInfo: form {:08X}, enchanted={}, gateEnabled={}", formID, isEnchanted, ItemCardHook::gateEnchantedTempering);
@@ -235,7 +286,7 @@ void ItemCardHook::InjectItemCardText(
         return;
     }
 
-    auto smithyText = BuildSmithyText(formID, isEnchanted);
+    auto smithyText = BuildSmithyText(formID, isEnchanted, isTempered);
     if (smithyText.empty()) {
         if (isNewSelection) {
             logger::debug("SmithyInfo: no smithy text for {:08X}", formID);
