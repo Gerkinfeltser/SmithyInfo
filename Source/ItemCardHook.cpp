@@ -2,12 +2,26 @@
 #include "COBJCache.h"
 #include "DIIIIntegration.h"
 
+#include <charconv>
+#include <cctype>
+#include <system_error>
+
 namespace {
 
 std::string FormatCountAndName(int a_count, const char* a_name) {
     if (a_count == 1)
         return "1 "s + a_name;
     return std::to_string(a_count) + " "s + a_name;
+}
+
+std::string_view Trim(std::string_view a_value) {
+    while (!a_value.empty() && std::isspace(static_cast<unsigned char>(a_value.front()))) {
+        a_value.remove_prefix(1);
+    }
+    while (!a_value.empty() && std::isspace(static_cast<unsigned char>(a_value.back()))) {
+        a_value.remove_suffix(1);
+    }
+    return a_value;
 }
 
 }
@@ -50,6 +64,37 @@ bool ItemCardHook::IsItemTempered(RE::InventoryEntryData* entry) {
     return false;
 }
 
+bool ItemCardHook::IsItemFiltered(RE::FormID a_formID) {
+    if (filterItems.empty()) return false;
+    bool inList = filterItems.contains(a_formID);
+    return filterIsBlacklist ? inList : !inList;
+}
+
+void ItemCardHook::SetFilterItemsFromString(std::string_view a_rawItems) {
+    filterItemsRaw = std::string(a_rawItems);
+    filterItems.clear();
+
+    while (!a_rawItems.empty()) {
+        auto comma = a_rawItems.find(',');
+        auto token = Trim(a_rawItems.substr(0, comma));
+        if (!token.empty()) {
+            std::uint32_t formID = 0;
+            auto* begin = token.data();
+            auto* end = token.data() + token.size();
+            auto result = std::from_chars(begin, end, formID, 16);
+            if (result.ec == std::errc{} && result.ptr == end) {
+                filterItems.insert(static_cast<RE::FormID>(formID));
+                logger::debug("INI: filter item {:08X}", formID);
+            } else {
+                logger::warn("INI: invalid sFilterItems entry '{}'", std::string(token));
+            }
+        }
+
+        if (comma == std::string_view::npos) break;
+        a_rawItems.remove_prefix(comma + 1);
+    }
+}
+
 namespace {
 
 bool ShouldShowTemper(bool a_isEnchanted) {
@@ -59,6 +104,8 @@ bool ShouldShowTemper(bool a_isEnchanted) {
 }
 
 std::string GetNameIndicator(RE::FormID a_formID, bool a_isEnchanted, bool a_isTempered) {
+    if (ItemCardHook::IsItemFiltered(a_formID)) return "";
+
     auto& cache = COBJCache::GetSingleton();
     auto& prefix = ItemCardHook::indicatorPrefix;
     auto& suffix = ItemCardHook::indicatorSuffix;
@@ -151,23 +198,30 @@ std::string BuildSmithyText(RE::FormID a_formID, bool a_isEnchanted, bool a_isTe
     auto& cache = COBJCache::GetSingleton();
     std::string text;
 
+    if (ItemCardHook::IsItemFiltered(a_formID)) return text;
+
     if (!a_isEnchanted) {
         auto* smeltResult = cache.GetSmeltResult(a_formID);
         if (smeltResult && smeltResult->outputItem) {
             auto* name = smeltResult->outputItem->GetName();
             if (name && *name) {
-                text += "Smelts into: " + FormatCountAndName(smeltResult->outputCount, name);
+                bool available = cache.IsSmeltAvailable(a_formID);
+                if (available || ItemCardHook::showLockedMaterials) {
+                    text += "Smelts into" + (available ? ": "s : " (locked): "s) +
+                            FormatCountAndName(smeltResult->outputCount, name);
+                }
             }
         }
     }
 
-    if (ShouldShowTemper(a_isEnchanted) && !a_isTempered) {
-        auto templateID = ItemCardHook::GetTemplateFormID(a_formID, a_isEnchanted);
-        auto lookupID = (templateID != 0) ? templateID : a_formID;
-        const auto* temperEntry = cache.GetTemperEntry(lookupID);
-        if (temperEntry && !temperEntry->ingredients.empty()) {
+    auto templateID = ItemCardHook::GetTemplateFormID(a_formID, a_isEnchanted);
+    auto lookupID = (templateID != 0) ? templateID : a_formID;
+    const auto* temperEntry = cache.GetTemperEntry(lookupID);
+    if (temperEntry && !temperEntry->ingredients.empty()) {
+        bool available = !a_isTempered && ShouldShowTemper(a_isEnchanted) && cache.IsTemperAvailable(a_formID, a_isEnchanted, templateID);
+        if (available || ItemCardHook::showLockedMaterials) {
             if (!text.empty()) text += "<br>";
-            text += "Tempers with: ";
+            text += "Tempers with" + (available ? ": "s : " (locked): "s);
             bool first = true;
             for (auto& ing : temperEntry->ingredients) {
                 if (!ing.item) continue;
@@ -210,8 +264,8 @@ void ItemCardHook::InvAdvanceMovie_Hook(
     float a_interval,
     std::uint32_t a_currentTime)
 {
-    _InvAdvanceMovie(a_this, a_interval, a_currentTime);
     activeMenu = ActiveMenu::Player;
+    _InvAdvanceMovie(a_this, a_interval, a_currentTime);
 
     auto* menu = static_cast<RE::InventoryMenu*>(a_this);
     auto& rt = menu->GetRuntimeData();
@@ -228,8 +282,8 @@ void ItemCardHook::ContAdvanceMovie_Hook(
     float a_interval,
     std::uint32_t a_currentTime)
 {
-    _ContAdvanceMovie(a_this, a_interval, a_currentTime);
     activeMenu = ActiveMenu::Container;
+    _ContAdvanceMovie(a_this, a_interval, a_currentTime);
 
     auto* menu = static_cast<RE::ContainerMenu*>(a_this);
     auto& rt = menu->GetRuntimeData();
@@ -246,8 +300,8 @@ void ItemCardHook::BarterAdvanceMovie_Hook(
     float a_interval,
     std::uint32_t a_currentTime)
 {
-    _BarterAdvanceMovie(a_this, a_interval, a_currentTime);
     activeMenu = ActiveMenu::Merchant;
+    _BarterAdvanceMovie(a_this, a_interval, a_currentTime);
 
     auto* menu = static_cast<RE::BarterMenu*>(a_this);
     auto& rt = menu->GetRuntimeData();
@@ -292,8 +346,8 @@ void ItemCardHook::InjectItemCardText(
         currentEffects = effectsVal.GetString();
     }
 
-    if (currentEffects.find("Tempers with:") != std::string::npos ||
-        currentEffects.find("Smelts into:") != std::string::npos) {
+    if (currentEffects.find("Tempers with") != std::string::npos ||
+        currentEffects.find("Smelts into") != std::string::npos) {
         _lastFormID = formID;
         return;
     }

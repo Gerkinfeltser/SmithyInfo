@@ -92,6 +92,25 @@ void __stdcall RenderSettings() {
 
     Separator();
 
+    if (CollapsingHeader("Locked Materials & Item Filter")) {
+        Checkbox("Show locked materials in item card", &ItemCardHook::showLockedMaterials);
+        Checkbox("Filter list is blacklist", &ItemCardHook::filterIsBlacklist);
+
+        static char filterBuf[1024] = {};
+        static bool filterBufInit = false;
+        if (!filterBufInit) {
+            strncpy_s(filterBuf, ItemCardHook::filterItemsRaw.c_str(), _TRUNCATE);
+            filterBufInit = true;
+        }
+
+        if (InputText("Filter FormIDs", filterBuf, 1024)) {
+            ItemCardHook::SetFilterItemsFromString(filterBuf);
+        }
+        TextDisabled("Comma-separated hex FormIDs, no 0x prefix. Empty = no filtering.");
+    }
+
+    Separator();
+
     if (Button("Save to INI")) {
         SmithyInfoMenu::SaveSettings();
     }
@@ -132,6 +151,8 @@ void SmithyInfoMenu::SaveSettings() {
     WriteBool("bGateEnchantedTempering", ItemCardHook::gateEnchantedTempering, iniPath);
     WriteBool("bDIIIIntegration", DIIIIntegration::enabled, iniPath);
     WriteBool("bHideLockedIndicators", ItemCardHook::hideLockedIndicators, iniPath);
+    WriteBool("bShowLockedMaterials", ItemCardHook::showLockedMaterials, iniPath);
+    WriteBool("bFilterIsBlacklist", ItemCardHook::filterIsBlacklist, iniPath);
 
     WriteString("sIndicatorPrefix", ItemCardHook::indicatorPrefix, iniPath);
     WriteString("sIndicatorSuffix", ItemCardHook::indicatorSuffix, iniPath);
@@ -139,6 +160,7 @@ void SmithyInfoMenu::SaveSettings() {
     WriteString("sIndicatorTemper", ItemCardHook::indicatorTemper, iniPath);
     WriteString("sIndicatorSmeltLocked", ItemCardHook::indicatorSmeltLocked, iniPath);
     WriteString("sIndicatorTemperLocked", ItemCardHook::indicatorTemperLocked, iniPath);
+    WriteString("sFilterItems", ItemCardHook::filterItemsRaw, iniPath);
 
     char perkBuf[16] = {};
     snprintf(perkBuf, sizeof(perkBuf), "%08X", ItemCardHook::arcaneBlacksmithPerkID);

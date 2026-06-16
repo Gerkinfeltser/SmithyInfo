@@ -115,6 +115,17 @@ SKSEPluginLoad(const SKSE::LoadInterface* a_skse) {
     ItemCardHook::hideLockedIndicators = GetPrivateProfileIntA("SmithyInfo", "bHideLockedIndicators", 0, iniPath.c_str()) != 0;
     logger::info("INI: bHideLockedIndicators = {}", ItemCardHook::hideLockedIndicators);
 
+    ItemCardHook::showLockedMaterials = GetPrivateProfileIntA("SmithyInfo", "bShowLockedMaterials", 1, iniPath.c_str()) != 0;
+    logger::info("INI: bShowLockedMaterials = {}", ItemCardHook::showLockedMaterials);
+
+    ItemCardHook::filterIsBlacklist = GetPrivateProfileIntA("SmithyInfo", "bFilterIsBlacklist", 1, iniPath.c_str()) != 0;
+    logger::info("INI: bFilterIsBlacklist = {}", ItemCardHook::filterIsBlacklist);
+
+    char filterBuf[1024] = {};
+    GetPrivateProfileStringA("SmithyInfo", "sFilterItems", "", filterBuf, 1024, iniPath.c_str());
+    ItemCardHook::SetFilterItemsFromString(filterBuf);
+    logger::info("INI: sFilterItems = {} entries (blacklist={})", ItemCardHook::filterItems.size(), ItemCardHook::filterIsBlacklist);
+
     SmithyInfoMenu::smfEnabled = GetPrivateProfileIntA("SmithyInfo", "bSMFIntegration", 1, iniPath.c_str()) != 0;
     logger::info("INI: bSMFIntegration = {}", SmithyInfoMenu::smfEnabled);
 

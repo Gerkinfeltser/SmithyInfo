@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string_view>
+#include <unordered_set>
+
 class ItemCardHook {
 public:
     static void Install();
@@ -21,6 +24,13 @@ public:
     static inline std::string indicatorSmeltLocked = "s?";
     static inline std::string indicatorTemperLocked = "t?";
     static inline bool hideLockedIndicators = false;
+    static inline bool showLockedMaterials = true;
+    static inline bool filterIsBlacklist = true;
+    static inline std::string filterItemsRaw;
+    static inline std::unordered_set<RE::FormID> filterItems;
+
+    static bool IsItemFiltered(RE::FormID a_formID);
+    static void SetFilterItemsFromString(std::string_view a_rawItems);
 
     enum class ActiveMenu : uint8_t { None, Player, Container, Merchant };
     static inline ActiveMenu activeMenu = ActiveMenu::None;

@@ -14,6 +14,7 @@ public:
         if (!DIIIIntegration::enabled) return false;
         if (!ItemCardHook::IsIndicatorEnabled()) return false;
         if (!entry || !entry->object) return false;
+        if (ItemCardHook::IsItemFiltered(entry->object->GetFormID())) return false;
         return COBJCache::GetSingleton().IsSmeltAvailable(entry->object->GetFormID());
     }
 };
@@ -25,6 +26,7 @@ public:
         if (!ItemCardHook::IsIndicatorEnabled()) return false;
         if (ItemCardHook::hideLockedIndicators) return false;
         if (!entry || !entry->object) return false;
+        if (ItemCardHook::IsItemFiltered(entry->object->GetFormID())) return false;
         auto& cache = COBJCache::GetSingleton();
         auto* result = cache.GetSmeltResult(entry->object->GetFormID());
         bool hasRecipe = (result && result->outputItem);
@@ -39,6 +41,7 @@ public:
         if (!DIIIIntegration::enabled) return false;
         if (!ItemCardHook::IsIndicatorEnabled()) return false;
         if (!entry || !entry->object) return false;
+        if (ItemCardHook::IsItemFiltered(entry->object->GetFormID())) return false;
         auto& cache = COBJCache::GetSingleton();
         bool isEnchanted = entry->IsEnchanted();
         if (isEnchanted && ItemCardHook::gateEnchantedTempering && !ItemCardHook::HasArcaneBlacksmith()) {
@@ -60,6 +63,7 @@ public:
         if (!ItemCardHook::IsIndicatorEnabled()) return false;
         if (ItemCardHook::hideLockedIndicators) return false;
         if (!entry || !entry->object) return false;
+        if (ItemCardHook::IsItemFiltered(entry->object->GetFormID())) return false;
 
         auto& cache = COBJCache::GetSingleton();
         bool isEnchanted = entry->IsEnchanted();
