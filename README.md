@@ -6,10 +6,13 @@ Skyrim SE SKSE plugin that shows smelting and tempering info on SkyUI item cards
 
 When you hover over a weapon or armor item in your inventory, SmithyInfo appends crafting info to the item card:
 
-- **Smelts into:** What the item breaks down into at a smelter
-- **Tempers with:** What materials you need to improve it at a grindstone or workbench
+- **Smelts into:** What the item breaks down into at a smelter, including locked recipes when enabled
+- **Tempers with:** What materials you need to improve it at a grindstone or workbench, including locked recipes when enabled
+- **Item filter:** Hide SmithyInfo output for specific FormIDs, or flip the list into whitelist mode
 
 **DIII Integration (Recommended):** If you have [Dynamic Inventory Icon Injector](https://www.nexusmods.com/skyrimspecialedition/mods/174136) by [JerryYOJ](https://github.com/JerryYOJ) installed, SmithyInfo registers `smithySmelt`, `smithySmeltLocked`, `smithyTemper`, and `smithyTemperLocked` conditions so you can show custom icons on smeltable/temperable items. Locked icons appear when conditions are unmet (skill level, perks, quests). This is the preferred display method — icons are cleaner than text. Without DIII, text indicators (`|TS|`, `|T|`, `|S|`) are shown on inventory list items instead (unless disabled in the INI).
+
+Locked material text is controlled separately from locked icons. With `bShowLockedMaterials = 1`, the item card can show entries like `Tempers with (locked): 1 Steel Ingot` so you know what to collect before you meet the requirements. Tough, but useful.
 
 Optionally, it can also tag items in the inventory list with small indicators (e.g. `|TS|`, `|T|`, `|S|`) for quick filtering — on by default, fully customizable.
 
@@ -44,13 +47,14 @@ Edit `SKSE/Plugins/SmithyInfo.ini`:
 ; Log level: trace, debug, info, warn, error, critical, off
 sLogLevel = info
 
-; Hide tempering info for enchanted items if player lacks Arcane Blacksmith perk
+; Gate enchanted tempering availability behind Arcane Blacksmith
+; Locked materials can still show as (locked) when bShowLockedMaterials=1
 bGateEnchantedTempering = 1
 
 ; FormID of the Arcane Blacksmith perk (hex, no 0x prefix)
 sArcaneBlacksmithPerkFormID = 0005218E
 
-; DIII (Dynamic Inventory Icon Injector) integration — registers smithySmelt/smithyTemper conditions
+; DIII integration — registers smithySmelt/smithySmeltLocked/smithyTemper/smithyTemperLocked conditions
 ; When enabled, text indicators are suppressed in favor of DIII icons
 bDIIIIntegration = 1
 
@@ -76,6 +80,18 @@ sIndicatorTemperLocked = T?   ; shown when tempering conditions are unmet
 ; Hide locked indicators (s?/t?) and DIII locked icons
 bHideLockedIndicators = 0
 
+; Show locked tempering/smelting materials in item card effects text
+; When 1, locked recipes show materials with a (locked) marker
+; This can also show enchanted tempering materials as locked when Arcane Blacksmith is missing
+bShowLockedMaterials = 1
+
+; Item filter list - comma-separated hex FormIDs (no 0x prefix)
+; Empty list = no filtering regardless of mode
+sFilterItems =
+
+; Filter mode: 1 = suppress SmithyInfo for listed FormIDs, 0 = show SmithyInfo only for listed FormIDs
+bFilterIsBlacklist = 1
+
 ; SKSE Menu Framework (optional) — in-game settings menu
 bSMFIntegration = 1
 ```
@@ -91,7 +107,7 @@ All `b*` toggles must be integers (`0` or `1`). `GetPrivateProfileIntA` cannot p
 5. Optionally appends indicators to inventory list item names
 6. Deduplication check prevents redundant work on already-injected cards
 
-Recipe availability is determined by evaluating the full COBJ condition chain (skill level, perks, quests, item counts, etc.) via the game's native `TESCondition::IsTrue()`. Items that fail conditions show locked indicators/icons. Already-tempered items show as locked for tempering.
+Recipe availability is determined by evaluating the full COBJ condition chain (skill level, perks, quests, item counts, etc.) via the game's native `TESCondition::IsTrue()`. Items that fail conditions show locked indicators/icons, and can show locked item-card materials when `bShowLockedMaterials = 1`. Already-tempered items show as locked for tempering and do not get duplicate tempering material text.
 
 Recipe cache rebuilds on every save load, so newly installed mods are picked up automatically.
 
@@ -112,7 +128,7 @@ DLL outputs to `SKSE/Plugins/SmithyInfo.dll`.
 - Only weapon/armor item cards show the effects text (misc items and alchemy ingredients have no `effects` field in SkyUI — but DIII icons and list indicators still work for them)
 - Mid-session script-added recipes won't appear until next save load
 - Item card space is limited — long material lists may get clipped
-- Enchanted items: smelting info is hidden (can't smelt them), tempering info requires the Arcane Blacksmith perk (configurable)
+- Enchanted items: smelting info is hidden (can't smelt them); available tempering requires the Arcane Blacksmith perk by default, but locked material text may still show when `bShowLockedMaterials = 1`
 - DIII integration: SmithyInfo must load before DIII for condition registration to succeed
 - DIII icons update on DIII's refresh cycle — there may be a brief delay when toggling indicator settings in-game before icons appear or disappear
 - Tempered item detection relies on `ExtraTextDisplayData::temperFactor` — some mods may bypass this
