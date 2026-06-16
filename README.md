@@ -133,6 +133,32 @@ DLL outputs to `SKSE/Plugins/SmithyInfo.dll`.
 - DIII icons update on DIII's refresh cycle — there may be a brief delay when toggling indicator settings in-game before icons appear or disappear
 - Tempered item detection relies on `ExtraTextDisplayData::temperFactor` — some mods may bypass this
 
+## Q&A
+
+**Why do DIII icons sometimes need the inventory opened twice after starting the game?**
+
+DIII attaches its icon/SWF handling to the SkyUI inventory list when the menu first opens. Sometimes that first list has already been formatted by the time DIII is ready, so icons appear on the next open. SmithyInfo's item-card text uses a separate hook and can appear immediately.
+
+**Why does the item card show SmithyInfo text, but the list has no icons?**
+
+Check that DIII is installed, `bDIIIIntegration = 1`, and the relevant indicator toggle is enabled (`bIndicatorPlayer`, `bIndicatorContainer`, or `bIndicatorMerchant`). If this only happens on the first inventory open after game start, close and reopen the menu. Skyrim has had a think and remembered what icons are.
+
+**Why does an already-tempered item show locked tempering?**
+
+Already-tempered items are treated as locked for tempering indicators so they do not look the same as items you can improve right now. If `bShowLockedMaterials = 1`, the item card can still show the required materials as `(locked)`.
+
+**Why do enchanted items show locked tempering materials?**
+
+By default, available enchanted tempering requires Arcane Blacksmith. Locked material text is separate: with `bShowLockedMaterials = 1`, SmithyInfo can still show what the recipe wants before you have the perk.
+
+**Why does an item show no SmithyInfo output?**
+
+Most likely it has no smelting or tempering COBJ recipe, its FormID is filtered, or it is a misc-style item with no SkyUI item-card `effects` field. Recipes added by scripts during play may also need the next save load before SmithyInfo sees them.
+
+**Can I write true/false in the INI?**
+
+No. Use `0` or `1` for all `b*` settings. The Windows INI parser used here cannot parse `true` or `false`.
+
 ## Source
 
 https://github.com/Gerkinfeltser/SmithyInfo
