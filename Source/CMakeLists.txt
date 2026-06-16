@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(SmithyInfo VERSION 0.2.0 LANGUAGES CXX)
+project(SmithyInfo VERSION 0.3.0 LANGUAGES CXX)
 
 set(OUTPUT_FOLDER "${CMAKE_CURRENT_SOURCE_DIR}/../")
 
@@ -8,7 +8,7 @@ find_package(CommonLibSSE CONFIG REQUIRED)
 find_package(jsoncpp CONFIG REQUIRED)
 
 function(add_skse_plugin PLUGIN_NAME)
-    add_commonlibsse_plugin(${PLUGIN_NAME} VERSION 0.2.0 SOURCES ${ARGN})
+    add_commonlibsse_plugin(${PLUGIN_NAME} VERSION 0.3.0 SOURCES ${ARGN})
     target_compile_features(${PLUGIN_NAME} PRIVATE cxx_std_23)
     target_include_directories(${PLUGIN_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
     target_precompile_headers(${PLUGIN_NAME} PRIVATE ../PCH.h)
