@@ -107,7 +107,7 @@ All `b*` toggles must be integers (`0` or `1`). `GetPrivateProfileIntA` cannot p
 5. Optionally appends indicators to inventory list item names
 6. Deduplication check prevents redundant work on already-injected cards
 
-Recipe availability is determined by evaluating the full COBJ condition chain (skill level, perks, quests, item counts, etc.) via the game's native `TESCondition::IsTrue()`. Items that fail conditions show locked indicators/icons, and can show locked item-card materials when `bShowLockedMaterials = 1`. Already-tempered items show as locked for tempering and do not get duplicate tempering material text.
+Recipe availability is determined by evaluating the full COBJ condition chain (skill level, perks, quests, item counts, etc.) via the game's native `TESCondition::IsTrue()`. Items that fail conditions show locked indicators/icons, and can show locked item-card materials when `bShowLockedMaterials = 1`. Already-tempered items show as locked for tempering and can still show locked material text when enabled.
 
 Recipe cache rebuilds on every save load, so newly installed mods are picked up automatically.
 
