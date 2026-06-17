@@ -109,7 +109,7 @@ All `b*` toggles must be integers (`0` or `1`). `GetPrivateProfileIntA` cannot p
 
 Recipe availability is determined by evaluating the full COBJ condition chain (skill level, perks, quests, item counts, etc.) via the game's native `TESCondition::IsTrue()`. Items that fail conditions show locked indicators/icons, and can show locked item-card materials when `bShowLockedMaterials = 1`. Already-tempered items show as locked for tempering and can still show locked material text when enabled.
 
-Recipe cache rebuilds on every save load, so newly installed mods are picked up automatically.
+Recipe cache builds after game data loads, so newly installed mods are picked up when you start/load the game with them installed. Recipes added later by scripts during play are not reflected until the next fresh game load.
 
 ## Building
 
@@ -126,7 +126,7 @@ DLL outputs to `SKSE/Plugins/SmithyInfo.dll`.
 ## Limitations
 
 - Only weapon/armor item cards show the effects text (misc items and alchemy ingredients have no `effects` field in SkyUI — but DIII icons and list indicators still work for them)
-- Mid-session script-added recipes won't appear until next save load
+- Mid-session script-added recipes won't appear until the cache is rebuilt on a fresh game load
 - Item card space is limited — long material lists may get clipped
 - Enchanted items: smelting info is hidden (can't smelt them); available tempering requires the Arcane Blacksmith perk by default, but locked material text may still show when `bShowLockedMaterials = 1`
 - DIII integration: SmithyInfo must load before DIII for condition registration to succeed
@@ -153,7 +153,7 @@ By default, available enchanted tempering requires Arcane Blacksmith. Locked mat
 
 **Why does an item show no SmithyInfo output?**
 
-Most likely it has no smelting or tempering COBJ recipe, its FormID is filtered, or it is a misc-style item with no SkyUI item-card `effects` field. Recipes added by scripts during play may also need the next save load before SmithyInfo sees them.
+Most likely it has no smelting or tempering COBJ recipe, its FormID is filtered, or it is a misc-style item with no SkyUI item-card `effects` field. Recipes added by scripts during play will not appear until SmithyInfo rebuilds its cache on a fresh game load.
 
 **Can I write true/false in the INI?**
 
