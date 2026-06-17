@@ -155,6 +155,10 @@ By default, available enchanted tempering requires Arcane Blacksmith. Locked mat
 
 Most likely it has no smelting or tempering COBJ recipe, its FormID is filtered, or it is a misc-style item with no SkyUI item-card `effects` field. Recipes added by scripts during play will not appear until SmithyInfo rebuilds its cache on a fresh game load.
 
+**Where do I look if something is broken?**
+
+Check `Documents/My Games/Skyrim Special Edition/SKSE/SmithyInfo.log`. It records whether SmithyInfo loaded, where it found the INI, what settings it read, whether the recipe cache built, and whether DIII conditions registered. If you report a bug, that log is usually the first useful thing to include.
+
 **Can I write true/false in the INI?**
 
 No. Use `0` or `1` for all `b*` settings. The Windows INI parser used here cannot parse `true` or `false`.
